@@ -1,0 +1,109 @@
+### CHECKPOINT 1 ###
+
+1. RTC interrupts only work the first time, then it wouldn't run again. What fixed this issue is 2 things:
+    . Fixed send_eoi logic. At first our send_eoi is just sending EOI | irq_num, but since RTC is from the seconddary PIC, 
+    we have to send EOI to the secondary PIC, and send EOI to the irq2 of the primary 
+    . We have not read the OSDEV carefully, and did not read from register C after irq8, thus interrupt woudn't happen again 
+
+2. Keyboard interrupt works but spout random character instead of the correct characte reven though I have checked 
+multiple times that scancode is correct. The issue is that when we populate the scancode table, I use temporary arrays to 
+simplify things up, but then I set scan_codes[scancode] = temp[scancode] instead of = temp[scancode - <first scancode of the row>]
+
+3. When creating an asm file that do all the linkage, there are errors like "junk at the end of lines", "junk () after operands", 
+the issue is that I included idt.h in the linkage asm file. 
+
+4) In idt_init the entry into the IDT was not getting set properly. This was because we passed in a function instead of a function pointer to 
+SET_IDT_ENTRY, and then after that, the issue of the function getting called prematurely was fixed
+
+5. when loading the gdt, it was bootlooping so we missed the padding for the gdt, so we needed to add .word 0 for the padding. And we figured out that
+we needed to remove the img if we had the testdebug running when we make
+
+6. In pic initialization we had a bunch of minor errors that we had to experiment with to figure out. For example, we were not sending the
+right offsets and we didn’t switch data and port from what it was on osdev
+
+### CHECKPOINT 2 ###
+
+1. SHIFT threw a page exception error even though it should have worked. This was fixed by resolving a linkage issue in paging.h
+
+2. Backspacing had an error where it would jump only to the top of the line and not to the next character. This was resolved by properly calculating screen_x and screen_Y
+when the line goes up one.
+
+3. Scrolling did not work because I was callng it only when I type characters off the next line and not when you enter into a new line. This
+was because the scroll_down function call was not in the right place in putc, I needed it after the \n insertion as well.
+
+4. RTC read wasn't changing the frequency correctly. Interrupt doesn't come in thee infinite loop to change the value, thus making the infinite
+loop running forever. Making the variable volatile fixed the issue.
+
+5. We all got mysterious pagefault when doing gdb in keyboard write, rtc write, and filsystem read dentry fron index and name. This is because 
+in idt.c, we accidentatlyy poplate the IDT table with the function pointer to rtc and keyboard handler, instead of the linkaged one. 
+
+6. When listing file system, every other names were working fine except for the super long name. It duplicates its name while printing it, even though 
+I set the string length to 32. To fix the issue, I make the string length 33 to leave space for the end of string character
+
+7. We had a lot of pagefaults during filesys because our buffer kept accessing memory that was either belwo 4mB or went over 8mB, and I actually fixed it by
+creating a function in assembly that would print the value of the CR2 register which would point to the error address.
+
+8. We had to learn how to typecast because a lot of times we were either dereferencing void pointers or we were accessing invalid/null addresses. Also, GDB is the best.
+
+
+### CHECKPOINT 3 ###
+
+1. One bug was that we had to correctly set up the fd array table where we also had to map stdin and stdout to the respective terminal reads and writes. Also, I implemented an 
+   internal type flag in the fd array.
+
+2. Our paging wasn't working because we didn't set the new mapping as userprogram so we then enabled usermode and used info mem to check for "urw".
+
+3. When loading system call to IDT, we had an if statement checking if idt index is 0x80 or not, then we populate that. However, we never actually increment
+the idt index, thus that if statement is never run, and thus the syscall handler never gets called when doing int $0x80
+
+4. In sys call handler, when jumping to the table, value in eax isn't 0-index, and we forgot to subtract 1 from the value in eax to jump to the functions
+
+5. Our sys_call_handler was not getting the arguments correctly, and we realized that our stack was messed up because we pushed the flags after each register. Once we switched the order of pushal and pushfl we got the arguments in the right place and it started
+working.
+
+6. Our terminal read did not have a flag to indicate when enter was pressed so this caused us to constantly print ECE391OS without allowing us to type into the keyboard. Our fix was to introduce the flag and 
+then the terminal read worked.
+
+### CHECKPOINT 3 ###
+
+
+### CHECKPOINT 4 ###
+1. One bug was that with the hello system call there was no newline being printed at the response to the call. The issue was not with the return value but with how we were populating the buffer 
+in our keyboard function, as we printed a newline but did not put that newline in the keyboard buffer.
+
+2. Our syserr was failing because we were not doing proper void/null checks in our sys_read and sys_write function, so we had to do fd checks to make sure the stdout and stdin
+parts of the file_descriptor were not being accessed when they shouldn't.
+
+3. In sys_halt, we were passing parameters as an uint8_t, thus when we used sys_halt in exception handlers, sys_halt never return 255 everytime an exception is occurred. Thus, changing 
+the parameter to uint32_t make things works
+
+4. In read_file, we were returning 0 if it can read, and -1 if it can't read. Thus, when I call cat, which expects read_file to return the number of bytes read, it always page fault after 
+running cat. Thus, making read_file return the number of bytes read fixed the issue. 
+
+5. In sys_read and sys_write, we never checked whether if fops.read or fops.write is NULL or not. Thus, syserr 7 always page fault. Same thing with syserr 5 where we never check if the file 
+has been opened or not. Thus syserr 5 also always page fault. Implementing those check fixed the issues. 
+
+
+### CHECKPOINT 5 ###
+1. When we created our terminal struct to represent the 3 terminals, at the beginning during initialization parts of the struct
+were getting overwritten to random values. We moved the important data to the top of the struct and that ended up fixing it as the buffers that get memset anyway
+could afford to get overwritten.
+
+2. Our buffer couldn't handle keyboard overflow between each terminal. The issue was we were not setting the kbb_ind to 0 when we should've been. We thought we were
+when we just memset the buffer to 0. 
+
+3. We weren't updating the cursor when we switched terminals properly. We moved the physical location but the actual screen_x, screen_y was still where it left off
+which caused multiple issues. The fix was we created the write_switch function and that caused a lot of issues.
+
+4. Before when we were doing scheduling, any program page faults after being halts completely. That is because in our PCB for scheduling, we save the current process esp and 
+ebp. but when we first initialize the shell, we were saving those but with incorrect kernel stack of the process. Now that we got it correctly
+ls works but only ls works
+
+5. When we setup the paging for multiple terminals, we setup 4 vidmaps total, but only one 4k page. That causes pagefaults when we attemp to switch terminals
+Setting up a page for each vidmap solves the issue
+
+6. When we implement scheduling, we send eoi of PIT after calling the scheduler. But the thing is, the scheduler never returns to that same PIT handler, but rather to the previous one. 
+But since we didn't send eoi for the previous one, PIT handler never gets called a second time, causing all interrupts to get masked.
+
+7. Multiple terminals was instantly page faulting and this was because we did not map the address of the 128MB page to the new shell
+We updated that page to point to the right VM using the "dummy" variable in code.
