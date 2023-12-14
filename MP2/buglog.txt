@@ -1,0 +1,75 @@
+MP 2.1
+
+22/2/2023
+Who - Me I got the bug
+What - I needed to understand the condition in the for loop for vertical line because it wasn't as complex as horizontal line.
+When - This was during my discussion session.
+How - I raised this question to a graduate TA who helped me understand the concept of VGA planes in the build buffer and how it is mapped to in video memory. 
+      After understanding, I was successfully able to implement the vertical line function on the first try. 
+
+23/2/2023
+Who - Me!
+What - I had a hard time understanding how to get started with the status bar since I didn't know how to appropriately set the Line Compare Register.
+When - This was happening around Thursday and I was trying to figure out the offset needed for scan line so that my status bar doesn't copy my maze.
+How - I talked to TAs about this and showed them diagrams that I made for this problem and they guided me on how to find this value for horizontal scan line.
+
+24/2/2023
+Who - Me!
+What -  Timer for status bar. I wanted to implement the timer and like make it use the 2 digit by 2 digit representation.
+When - Happened around Friday. I knew I had to make use of the time module in C and implement it in the for loop but I didn't know how.
+How - A TA suggested me to create a start time followed by a current time and have the status bar format the time difference (in seconds).
+      I did so by the "sprintf" function in C.
+
+25/2/2023:
+Who - Me!
+What - I had a bit of trouble understanding what masking was trying to do so I asked a TA to explain to me the gist of it.
+When - This happened around Friday night after I got my status bar to work. I had a TA sit down and explain to me the concept
+       pretty well and he also guided me in how to implement it.
+How  - Once I understood the higher level of it, the implementation wasn't too bad because it just required me to save,draw,show and redraw.
+
+27/2/2023:
+Who - Me!
+What - I had a bit of trouble understanding the fruit edge case that it doesn't redraw when it is at the edge. This was an edge case that is also
+       present in the demo version. 
+When - This happened around Monday afternoon while I was working on MP2.2. I had a TA help me deal with this edge case but it was a pretty easy one. 
+How  - Essentially you want the game to be redrawn whenever an event happens like a fruit being consumed or the player moving.
+
+MP 2.2
+
+2/3/2023
+Who - Me!
+What - I had a bit of trouble understanding how to change the wall and player's central color to something that would change with each level
+       and something that would flicker. Currently, my walls weren't changing color neither did I know where to start from for player's central color.
+When - This happened on Thursday and I was in lab early morning to have a TA explain to me what the separate palette function is supposed to do.
+How  - You want to add an additional address parameter to your set_palette function that writes your color at the address specified in blocks.h. This       
+       allowed me to write colors to addresses which hold wall and central color of the player. For the flashing I just made the color change every 16 ticks.
+
+3/3/2023
+Who - Me!
+What - I had a bit of trouble understanding how TUX init worked and what we had to do. Also, I had trouble setting up the TUX emulator because of the       
+       changing paths. I also didn't know much about how to test TUX and what I had to make exactly. 
+When - This happened around Friday morning. I had read the TUX_Spec doc multiple times but it was hard to understand so I asked a TA to explain to me what
+       a function like handle packet was doing and what tux init did. 
+How  - TUX init required me to set all the LEDs to off (which I implemented later), handle packet was handling only 3 opcodes that we needed and I implemented them
+       with the help of mtcp.h which was very useful.
+
+4/3/2023
+Who - Me!
+What - I had a bug in my LED function because my decimal places were also turning off when my LED was off. I had overlooked a key detail of them being independent.
+When - This happened around Saturday evening. I had a friend inform me of this detail and I quickly thought of what I had to do. 
+How  - This bug was easy to fix because I just had to make sure that I checked for a decimal in the case when the LED was off so that I still display it. 
+
+5/3/2023
+Who - Me!
+What - I had a hard time understanding the gist of transparent fruit text. I had understood the higher level of it but I was struggling to implement it especially 
+       with the whole transparent color + 64 indexing and also I was confused about how I can ensure text wrapping.
+       present in the demo version. 
+When - This happened around Sunday afternoon after I integrated TUX to the game. I had TAs help me understand what modifications I had to make with my existing functions.
+How  - Essentially you want to save the floor block to a buffer, then draw the block using the masking (but draw using the transparent version of the floor which may or may not have walls)
+       and then you draw to block.
+
+6/3/2023
+Who - Me!
+What - I had to be vary of my returns for most of my functions especially in ioctl because some returned 0 and some return -EINVAL. I had to add error checking for them. 
+When - This happened around Monday afternoon while I was finishing commenting for MP2.2. I had to go over the doc to look at what functions returned what and when. 
+How  - I added error checks for invalid ldisc puts, copy to users and I also made sure to return -EINVAL for these cases and for the unused ioctl calls. 
